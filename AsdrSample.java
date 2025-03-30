@@ -17,7 +17,10 @@ public class AsdrSample {
 		 "WHILE", 
 		 "IF", 
 		 "FI",
-		 "ELSE"  };
+		 "ELSE",
+       "INT",
+       "DOUBLE",
+       "BOOLEAN" };
                                       
   /* referencia ao objeto Scanner gerado pelo JFLEX */
   private Yylex lexer;
@@ -71,15 +74,88 @@ public class AsdrSample {
 ***/ 
 
   private void Prog() {
-      if (laToken == '{') {
-         if (debug) System.out.println("Prog --> Bloco");
+      if (laToken == '{' || laToken == BOOLEAN || laToken == INT || laToken == DOUBLE) {
+         if (debug) System.out.println("Prog --> ListaDecVar Bloco");
+         ListaDecVar();
          Bloco();
       }
       else 
         yyerror("esperado '{'");
    }
 
-  private void Bloco() {
+   ListaDecl(){
+      if (laToken == INT || laToken == DOUBLE || laToken == BOOLEAN) {
+         if (debug) 
+            System.out.println("listaDecVar --> DeclVar listaDecVar");
+         ListaDeclVar();
+         ListaDecl();
+      }
+      else if (laToken == FUNC) {
+         ListaDeclFun();
+         ListaDecl();
+      }
+      
+      // /* vazio */
+   }}
+
+   ListaDeclVar(){
+      DeclVar();
+      ListaDeclVar();
+   }
+   private void DeclaVar(){
+      Tipo();
+      ListaIdent();
+      verifica(';');
+   }
+
+   ListaDeclFun(){
+      DeclFun();
+      ListaDeclFun();
+   }
+   
+   private void DeclFun(){
+      verifica(FUNC);
+      tipoOuVoid();
+      verifica('(');
+      FormalPar();
+      verifica(')');
+      verifica('{');
+      DeclVar();
+      ListaCmd();
+      verifica('}');
+      // FUNC tipoOuVoid IDENT '( FormalPar ')' '{' DeclVar ListaCmd '}' DeclFun
+      // /* vazio */
+   }
+
+   private void tipoOuVoid (){
+      if (laToken == INT || laToken == DOUBLE || laToken == BOOLEAN) {
+         Tipo();
+      } else if (laToken == VOID) {
+         verifica(VOID);
+      } else {
+         yyerror("Esperado tipo ou void");
+      }
+   }
+
+   private void FormalPar(){
+      // ParamList | /* vazio */
+   }
+
+   private void ParamList(){
+      Tipo();
+      verifica(IDENT);
+      ParamList();
+   }
+
+   private void Tipo(){
+      if (laToken == INT || laToken == DOUBLE || laToken == BOOLEAN) {
+         laToken = yylex();
+      } else {
+         yyerror("Esperado tipo INT, DOUBLE ou BOOLEAN");
+      }
+   }
+
+     private void Bloco() {
       if (debug) System.out.println("Bloco --> { Cmd }");
       //if (laToken == '{') {
          verifica('{');
@@ -88,11 +164,17 @@ public class AsdrSample {
       //}
   }
 
+  private void ListaCmd() {
+      Cmd();
+      ListaCmd();
+      // vazio
+  }
+
   private void Cmd() {
       if (laToken == '{') {
          if (debug) System.out.println("Cmd --> Bloco");
          Bloco();
-	   }    
+	   }
       else if (laToken == WHILE) {
          if (debug) System.out.println("Cmd --> WHILE ( E ) Cmd");
          verifica(WHILE);    // laToken = this.yylex(); 
